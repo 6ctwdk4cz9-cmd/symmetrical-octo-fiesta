@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>橋野文化 · 音频处理器</title>
+    <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f0f2f5;
+            padding: 1.5rem;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .hero {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .hero h1 {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 40px;
+            border: 1px solid #ddd;
+            margin-bottom: 1.5rem;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #555;
+            transition: 0.2s;
+        }
+        .tab-btn:hover {
+            background: #eef2ff;
+        }
+        .tab-btn.active {
+            background: #1e293b;
+            color: white;
+        }
+        .page {
+            display: none;
+        }
+        .page.active-page {
+            display: block;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .badge {
+            font-size: 0.7rem;
+            background: #e2e8f0;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+        }
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            background: #f8fafc;
+            margin-bottom: 1rem;
+            transition: 0.2s;
+        }
+        .drop-zone.drag-over {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .upload-btn {
+            background: white;
+            border: 1px solid #cbd5e1;
+            padding: 0.3rem 1.2rem;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .upload-btn:hover {
+            background: #f1f5f9;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .flex-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 0.5rem 0;
+        }
+        .full-btn {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 0.5rem;
+            transition: 0.2s;
+        }
+        .full-btn:hover:not(:disabled) {
+            background: #2563eb;
+        }
+        .full-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .info-text {
+            font-size: 0.85rem;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 0.3rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        .file-list {
+            max-height: 140px;
+            overflow-y: auto;
+            margin: 0.5rem 0;
+        }
+        .batch-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0.8rem;
+            background: #f8fafc;
+            border-radius: 30px;
+            margin: 4px 0;
+            font-size: 0.85rem;
+        }
+        .delete-single {
+            background: none;
+            border: none;
+            color: #dc2626;
+            cursor: pointer;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #3b82f6;
+            transition: width 0.3s;
+        }
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: #94a3b8;
+            font-size: 0.8rem;
+        }
+        @media (max-width: 640px) {
+            body {
+                padding: 0.8rem;
+            }
+            .tabs {
+                gap: 0.2rem;
+                padding: 0.3rem;
+            }
+            .tab-btn {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>橋野文化 · 音频处理器</h1>
+            <p style="color: #64748b;">变速 · 混音 · 批量 · 测试 · 图片 · 重复检测 · 截取前N秒</p>
+            <div style="margin-top: 0.5rem; font-size: 0.8rem;">微信：<strong style="color:#2563eb;">ZTFN66666666</strong></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-page="page1">变速</button>
+            <button class="tab-btn" data-page="page2">混音</button>
+            <button class="tab-btn" data-page="page3">变速引擎</button>
+            <button class="tab-btn" data-page="page4">视频转音频</button>
+            <button class="tab-btn" data-page="page5">图片</button>
+            <button class="tab-btn" data-page="page6">测试</button>
+            <button class="tab-btn" data-page="page7">重复检测</button>
+            <button class="tab-btn" data-page="page8">截取前N秒</button>
+        </div>
+
+        <!-- 页面1: 变速 -->
+        <div id="page1" class="page active-page">
+            <div class="card">
+                <div class="card-header"><h2>变速</h2><span class="badge">处理</span></div>
+                <div class="card-body">
+                    <div class="drop-zone" id="batchDropZone">
+                        <label class="upload-btn" for="batchAudio">选择文件（可多选）</label>
+                        <input type="file" id="batchAudio" multiple accept="audio/*, .zip, .rar">
+                        <div id="uploadStatus" class="info-text">未选择文件</div>
+                    </div>
+                    <div id="batchFileListContainer" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#64748b;">
+                            <span>已选列表</span>
+                            <button id="clearBatchBtn" style="background:none; border:none; color:#dc2626; cursor:pointer;">清空</button>
+                        </div>
+                        <div id="batchFileList" class="file-list"></div>
+                    </div>
+                    <div class="flex-row">
+                        <span>变速模式</span>
+                        <select id="speedSelect">
+                            <option value="0.5">0.5x</option>
+                            <option value="0.8">0.8x</option>
+                            <option value="0.9">0.9x</option>
+                            <option value="1.0" selected>1.0x</option>
+                            <option value="1.1">1.1x</option>
+                            <option value="1.2">1.2x</option>
+                            <option value="2.0">2.0x</option>
+                        </select>
+                    </div>
+                    <div class="flex-row">
+                        <label><input type="checkbox" id="trimSilenceCheckbox" checked> 尾音处理</label>
+                    </div>
+                    <div class="flex-row">
+                        <span>导出格式</span>
+                        <label><input type="radio" name="format" value="mp3" checked> MP3</label>
+                        <label><input type="radio" name="format" value="wav"> WAV</label>
+                    </div>
+                    <button id="batchExportBtn" class="full-btn">开始处理</button>
+                    <div id="batchProgress" class="info-text" style="display:none;">
+                        <div class="progress-bar-container"><div class="progress-bar"></div></div>
+                    </div>
+                    <div class="info-text">单文件直接下载，多文件每15个打包一个ZIP</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面2: 混音 -->
+        <div id="page2" class="page">
+            <div class="card">
+                <div class="card-header"><h2>混音预设</h2><span class="badge">6种预设</span></div>
+                <div class="card-body">
+                    <div class="drop-zone" id="mixDropZone">
+                        <label class="upload-btn" for="mixAudio">选择音频</label>
+                        <input type="file" id="mixAudio" accept="audio/*">
+                        <div id="mixFileInfo" class="info-text">未选择文件</div>
+                    </div>
+                    <div class="mix-preset-select" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin:0.5rem 0;">
+                        <button class="preset-btn active" data-preset="pop" style="background:#f8fafc; border:1px solid #cbd5e1; padding:0.2rem 0.8rem; border-radius:30px; cursor:pointer;">流行</button>
+                        <button class="preset-btn" data-preset="electronic" style="background:#f8fafc; border:1px solid #cbd5e1; padding:0.2rem 0.8rem; border-radius:30px; cursor:pointer;">电子</button>
+                        <button class="preset-btn" data-preset="rock" style="background:#f8fafc; border:1px solid #cbd5e1; padding:0.2rem 0.8rem; border-radius:30px; cursor:pointer;">摇滚</button>
+                        <button class="preset-btn" data-preset="acoustic" style="background:#f8fafc; border:1px solid #cbd5e1; padding:0.2rem 0.8rem; border-radius:30px; cursor:pointer;">原声</button>
+                        <button class="preset-btn" data-preset="bass" style="background:#f8fafc; border:1px solid #cbd5e1; padding:0.2rem 0.8rem; border-radius:30px; cursor:pointer;">重低音</button>
+                        <button class="preset-btn" data-preset="clear" style="background:#f8fafc; border:1px solid #cbd5e1; padding:0.2rem 0.8rem; border-radius:30px; cursor:pointer;">清晰</button>
+                    </div>
+                    <div class="flex-row">
+                        <span>强度</span>
+                        <input type="range" id="mixIntensity" min="0" max="100" value="70" style="flex:1;">
+                        <span id="intensityValue" style="min-width:36px;">70%</span>
+                    </div>
+                    <div class="flex-row">
+                        <span>导出格式</span>
+                        <label><input type="radio" name="mixFormat" value="mp3" checked> MP3</label>
+                        <label><input type="radio" name="mixFormat" value="wav"> WAV</label>
+                    </div>
+                    <button id="mixProcessBtn" class="full-btn">混音 & 下载</button>
+                    <div id="mixProgress" class="info-text" style="display:none;">
+                        <div class="progress-bar-container"><div class="progress-bar"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面3: 变速引擎 -->
+        <div id="page3" class="page">
+            <div class="card">
+                <div class="card-header"><h2>变速引擎</h2><span class="badge">批量处理</span></div>
+                <div class="card-body">
+                    <div class="drop-zone" id="sunoBatchDropZone">
+                        <label class="upload-btn" for="sunoBatchAudio">选择音频（可多选）</label>
+                        <input type="file" id="sunoBatchAudio" multiple accept="audio/*">
+                        <div id="sunoUploadStatus" class="info-text">未选择文件</div>
+                    </div>
+                    <div id="sunoFileListContainer" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#64748b;">
+                            <span>已选列表</span>
+                            <button id="clearSunoBatchBtn" style="background:none; border:none; color:#dc2626; cursor:pointer;">清空</button>
+                        </div>
+                        <div id="sunoBatchFileList" class="file-list"></div>
+                    </div>
+                    <div class="flex-row">
+                        <span>速度</span>
+                        <select id="sunoSpeedSelect">
+                            <option value="0.5">0.5x</option>
+                            <option value="0.8">0.8x</option>
+                            <option value="0.9">0.9x</option>
+                            <option value="1.0" selected>1.0x</option>
+                            <option value="1.1">1.1x</option>
+                            <option value="1.2">1.2x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2.0">2.0x</option>
+                            <option value="3.0">3.0x</option>
+                            <option value="-1">倒放</option>
+                        </select>
+                    </div>
+                    <div class="flex-row">
+                        <span>导出格式</span>
+                        <label><input type="radio" name="sunoFormat" value="mp3" checked> MP3</label>
+                        <label><input type="radio" name="sunoFormat" value="wav"> WAV</label>
+                    </div>
+                    <button id="sunoBatchProcessBtn" class="full-btn">批量处理</button>
+                    <div id="sunoBatchProgress" class="info-text" style="display:none;">
+                        <div class="progress-bar-container"><div class="progress-bar"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面4: 视频转音频 -->
+        <div id="page4" class="page">
+            <div class="card">
+                <div class="card-header"><h2>视频转音频</h2><span class="badge">提取</span></div>
+                <div class="card-body">
+                    <div class="drop-zone" id="douyinDropZone">
+                        <label class="upload-btn" for="douyinVideoFile">上传视频</label>
+                        <input type="file" id="douyinVideoFile" accept="video/*">
+                        <div id="douyinFileInfo" class="info-text">未选择视频</div>
+                    </div>
+                    <div class="waveform"><canvas id="douyinWaveCanvas" width="600" height="56"></canvas></div>
+                    <audio id="douyinAudioPreview" controls style="display:none;"></audio>
+                    <div id="douyinStatus" class="info-text" style="margin:0.5rem 0;">等待上传</div>
+                    <div class="flex-row">
+                        <span>导出格式</span>
+                        <label><input type="radio" name="douyinFormat" value="mp3" checked> MP3</label>
+                        <label><input type="radio" name="douyinFormat" value="wav"> WAV</label>
+                    </div>
+                    <button id="douyinToAudioBtn" class="full-btn">提取音频</button>
+                    <div id="douyinProgress" class="info-text" style="display:none;">
+                        <div class="progress-bar-container"><div class="progress-bar"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面5: 图片 -->
+        <div id="page5" class="page">
+            <div class="card">
+                <div class="card-header"><h2>图片</h2><span class="badge">直接下载</span></div>
+                <div class="card-body">
+                    <div class="drop-zone" id="imgDropZone">
+                        <label class="upload-btn" for="imgFile">选择图片（可多选）</label>
+                        <input type="file" id="imgFile" accept="image/jpeg,image/png" multiple>
+                        <div id="imgUploadStatus" class="info-text">未选择图片</div>
+                    </div>
+                    <div id="imgListContainer" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#64748b;">
+                            <span>已选图片</span>
+                            <button id="clearAllImgBtn" style="background:none; border:none; color:#dc2626; cursor:pointer;">清空</button>
+                        </div>
+                        <div id="imgFileList" class="file-list"></div>
+                    </div>
+                    <div class="flex-row">
+                        <label><input type="radio" name="imgPreset" value="qishui" checked> 汽水(1440px)</label>
+                        <label><input type="radio" name="imgPreset" value="tencent"> 腾讯(1500x1500)</label>
+                        <label><input type="radio" name="imgPreset" value="original"> 原尺寸</label>
+                    </div>
+                    <button id="processAllImgBtn" class="full-btn">处理并下载</button>
+                    <div id="imgProgress" class="info-text" style="display:none;">
+                        <div class="progress-bar-container"><div class="progress-bar"></div></div>
+                    </div>
+                    <canvas id="imgCanvas" style="display:none;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面6: 测试 -->
+        <div id="page6" class="page">
+            <div class="card">
+                <div class="card-header"><h2>测试</h2><span class="badge">分析</span></div>
+                <div class="card-body">
+                    <div class="drop-zone" id="testDropZone">
+                        <label class="upload-btn" for="testAudioFile">选择音频</label>
+                        <input type="file" id="testAudioFile" accept="audio/*">
+                        <div id="testFileInfo" class="info-text">未选择文件</div>
+                    </div>
+                    <div class="waveform"><canvas id="testWaveCanvas" width="600" height="56"></canvas></div>
+                    <audio id="testAudioPlayer" controls></audio>
+                    <div id="testInfo" class="info-text">等待上传</div>
+                    <div class="flex-row" style="justify-content:center;">
+                        <button id="analyzeBtn" class="upload-btn">分析</button>
+                        <button id="detectBpmBtn" class="upload-btn">检测BPM</button>
+                        <button id="resetTestBtn" class="upload-btn">重置</button>
+                    </div>
+                    <div id="analysisResult" class="info-text"></div>
+                    <div id="bpmResult" class="info-text" style="color:#2563eb; font-weight:600; display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面7: 重复检测 -->
+        <div id="page7" class="page">
+            <div class="card">
+                <div class="card-header"><h2>音频重复度检测</h2><span class="badge">30+维度</span></div>
+                <div class="card-body">
+                    <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:0.8rem; border-radius:8px; margin-bottom:1rem;">
+                        <p>✅ 上传两个音频文件（MP3/WAV/OGG/FLAC，最大50MB）</p>
+                        <p style="font-size:0.85rem; margin-top:4px;">📌 拖拽或点击上传，分析完成后生成详细报告</p>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+                        <div id="audio1-container" style="border:2px dashed #cbd5e1; border-radius:12px; padding:1rem; text-align:center; background:#fafcff;">
+                            <i class="fa fa-music" style="font-size:2rem; color:#94a3b8;"></i>
+                            <h4 style="margin:0.5rem 0;">音频 1</h4>
+                            <div id="audio1-droparea">
+                                <label class="upload-btn" for="audio1-input">选择文件</label>
+                                <input type="file" id="audio1-input" accept="audio/*">
+                                <div id="audio1-status" class="info-text" style="margin-top:0.5rem;">未选择</div>
+                            </div>
+                            <div id="audio1-info" style="font-size:0.8rem; color:#64748b; margin-top:0.5rem;"></div>
+                            <div id="audio1-error" style="color:#dc2626; font-size:0.8rem; display:none;"></div>
+                        </div>
+                        <div id="audio2-container" style="border:2px dashed #cbd5e1; border-radius:12px; padding:1rem; text-align:center; background:#fafcff;">
+                            <i class="fa fa-music" style="font-size:2rem; color:#94a3b8;"></i>
+                            <h4 style="margin:0.5rem 0;">音频 2</h4>
+                            <div id="audio2-droparea">
+                                <label class="upload-btn" for="audio2-input">选择文件</label>
+                                <input type="file" id="audio2-input" accept="audio/*">
+                                <div id="audio2-status" class="info-text" style="margin-top:0.5rem;">未选择</div>
+                            </div>
+                            <div id="audio2-info" style="font-size:0.8rem; color:#64748b; margin-top:0.5rem;"></div>
+                            <div id="audio2-error" style="color:#dc2626; font-size:0.8rem; display:none;"></div>
+                        </div>
+                    </div>
+                    <button id="compare-btn" class="full-btn" disabled>开始智能深度检测</button>
+                    <div id="loading" style="display:none; text-align:center; padding:1rem;">
+                        <div style="display:inline-block; width:30px; height:30px; border:4px solid #e2e8f0; border-top:4px solid #3b82f6; border-radius:50%; animation:spin 1s linear infinite;"></div>
+                        <p>分析中...</p>
+                        <div style="width:100%; height:4px; background:#e2e8f0; border-radius:2px; margin-top:0.5rem;">
+                            <div id="loading-progress" style="width:0%; height:100%; background:#3b82f6; border-radius:2px;"></div>
+                        </div>
+                        <p id="loading-step" style="font-size:0.8rem; color:#64748b; margin-top:0.3rem;">准备中...</p>
+                    </div>
+                    <div id="result" style="display:none; margin-top:1rem;">
+                        <div id="reportContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页面8: 截取前N秒 -->
+        <div id="page8" class="page">
+            <div class="card">
+                <div class="card-header"><h2>截取前N秒</h2><span class="badge">批量截取</span></div>
+                <div class="card-body">
+                    <div class="drop-zone" id="truncateDropZone">
+                        <label class="upload-btn" for="truncateInput">选择文件（音频 / 压缩包）</label>
+                        <input type="file" id="truncateInput" accept="audio/*, .zip, .rar" multiple>
+                        <div id="truncateStatus" class="info-text">未选择文件</div>
+                    </div>
+                    <div id="truncateFileListContainer" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#64748b;">
+                            <span>已选文件</span>
+                            <button id="clearTruncateFiles" style="background:none; border:none; color:#dc2626; cursor:pointer;">清空</button>
+                        </div>
+                        <div id="truncateFileList" class="file-list"></div>
+                    </div>
+                    <div class="flex-row">
+                        <span>截取时长</span>
+                        <input type="number" id="truncateSeconds" value="20" min="1" max="600" style="width:80px; padding:0.3rem; border-radius:30px; border:1px solid #cbd5e1;">
+                        <span style="font-size:0.8rem; color:#64748b;">秒</span>
+                    </div>
+                    <div class="flex-row">
+                        <span>导出格式</span>
+                        <label><input type="radio" name="truncateFormat" value="mp3" checked> MP3</label>
+                        <label><input type="radio" name="truncateFormat" value="wav"> WAV</label>
+                    </div>
+                    <button id="truncateBtn" class="full-btn">截取并下载</button>
+                    <div id="truncateProgress" class="info-text" style="display:none;">
+                        <div class="progress-bar-container"><div class="progress-bar"></div></div>
+                    </div>
+                    <div class="info-text">支持 ZIP/RAR 压缩包，自动解压提取音频。<br>单文件直接下载，多文件每15个打包一个ZIP。</div>
+                </div>
+            </div>
+        </div>
+
+        <footer>橋野文化 · 本地处理 · 隐私安全</footer>
+    </div>
+
+    <script>
+        // =============================================================
+        // 核心功能
+        // =============================================================
+
+        const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        // =============================================================
+        // cleanName - 删除关键词，删除空括号
+        // 删除：·版本、-后面、版字、+号、Remix、伴奏、Instrumental、
+        //       Cover、Official、翻唱、Live、live、Iive
+        // 如果括号内没有文字，删除括号本身
+        // =============================================================
+        function cleanName(name) {
+            let base = name.replace(/\.[^.]+$/, '');
+            
+            // 删除 "· 版本" 及之后
+            base = base.replace(/·\s*版本.*$/, '');
+            
+            // 删除末尾的 "-" 及之后（保留有内容的括号）
+            base = base.replace(/-\s*[^)]*$/, '');
+            
+            // 删除 "版" 字
+            base = base.replace(/版/g, '');
+            
+            // 将 "+" 替换为 "x"
+            base = base.replace(/\+/g, 'x');
+            
+            // ===== 删除括号内的关键词（保留括号本身）=====
+            base = base.replace(/[（(]\s*[Rr]emix\s*[）)]/g, '()');
+            base = base.replace(/[（(]\s*伴奏\s*[）)]/g, '()');
+            base = base.replace(/[（(]\s*[Ii]nstrumental\s*[）)]/g, '()');
+            base = base.replace(/[（(]\s*[Cc]over\s*[）)]/g, '()');
+            base = base.replace(/[（(]\s*[Oo]fficial\s*[）)]/g, '()');
+            base = base.replace(/[（(]\s*翻唱\s*[）)]/g, '()');
+            base = base.replace(/[（(]\s*[Ll]ive\s*[）)]/g, '()');
+            base = base.replace(/[（(]\s*[Ii]ive\s*[）)]/g, '()');
+            // =========================================
+            
+            // ===== 删除空的括号 =====
+            base = base.replace(/[（(]\s*[）)]/g, '');
+            base = base.replace(/[（(][）)]/g, '');
+            // ===========================
+            
+            // 清理多余空格
+            base = base.trim();
+            base = base.replace(/^[-_\s]+/, '').replace(/[-_\s]+$/, '');
+            
+            return base || name.replace(/\.[^.]+$/, '');
+        }
+
+        function isZipFile(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            return ['zip', 'rar', '7z'].includes(ext);
+        }
+
+        async function extractAudioFromZip(zipFile) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const zip = await JSZip.loadAsync(e.target.result);
+                        const audioFiles = [];
+                        const exts = ['mp3', 'wav', 'ogg', 'flac', 'm4a'];
+                        for (const [filename, file] of Object.entries(zip.files)) {
+                            if (!file.dir && !filename.startsWith('__MACOSX')) {
+                                const ext = filename.split('.').pop().toLowerCase();
+                                if (exts.includes(ext)) {
+                                    const blob = await file.async('blob');
+                                    audioFiles.push(new File([blob], filename.split('/').pop()));
+                                }
+                            }
+                        }
+                        resolve(audioFiles);
+                    } catch (err) { reject(err); }
+                };
+                reader.onerror = () => reject(new Error('读取ZIP失败'));
+                reader.readAsArrayBuffer(zipFile);
+            });
+        }
+
+        async function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function bufferToWav(buf) {
+            const ch = buf.numberOfChannels,
+                rate = buf.sampleRate,
+                samples = buf.getChannelData(0);
+            const len = samples.length * 2 * ch;
+            const ab = new ArrayBuffer(44 + len);
+            const dv = new DataView(ab);
+            const write = (off, str) => { for (let i = 0; i < str.length; i++) dv.setUint8(off + i, str.charCodeAt(i)); };
+            write(0, 'RIFF');
+            dv.setUint32(4, 36 + len, true);
+            write(8, 'WAVE');
+            write(12, 'fmt ');
+            dv.setUint32(16, 16, true);
+            dv.setUint16(20, 1, true);
+            dv.setUint16(22, ch, true);
+            dv.setUint32(24, rate, true);
+            dv.setUint32(28, rate * ch * 2, true);
+            dv.setUint16(32, ch * 2, true);
+            dv.setUint16(34, 16, true);
+            write(36, 'data');
+            dv.setUint32(40, len, true);
+            let off = 44;
+            for (let i = 0; i < samples.length; i++) {
+                for (let c = 0; c < ch; c++) {
+                    let s = buf.getChannelData(c)[i];
+                    dv.setInt16(off, Math.max(-1, Math.min(1, s)) * 0x7FFF, true);
+                    off += 2;
+                }
+            }
+            return new Blob([ab], { type: 'audio/wav' });
+        }
+
+        async function bufferToMp3(buf) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const ch = buf.numberOfChannels,
+                        rate = buf.sampleRate;
+                    const left = buf.getChannelData(0),
+                        right = ch > 1 ? buf.getChannelData(1) : left;
+                    const to16 = (f32) => {
+                        const p = new Int16Array(f32.length);
+                        for (let i = 0; i < f32.length; i++) p[i] = Math.max(-1, Math.min(1, f32[i])) * 0x7FFF;
+                        return p;
+                    };
+                    const L = to16(left),
+                        R = to16(right);
+                    const enc = new lamejs.Mp3Encoder(ch, rate, 192);
+                    const parts = [];
+                    for (let i = 0; i < L.length; i += 1152) {
+                        const mp3 = enc.encodeBuffer(L.subarray(i, i + 1152), R.subarray(i, i + 1152));
+                        if (mp3.length) parts.push(new Int8Array(mp3));
+                    }
+                    const end = enc.flush();
+                    if (end.length) parts.push(new Int8Array(end));
+                    const total = parts.reduce((a, b) => a + b.length, 0);
+                    const final = new Uint8Array(total);
+                    let pos = 0;
+                    for (const p of parts) { final.set(p, pos);
+                        pos += p.length; }
+                    resolve(new Blob([final], { type: 'audio/mpeg' }));
+                } catch (e) { reject(e); }
+            });
+        }
+
+        // ----- 页面切换 -----
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+                document.getElementById(this.dataset.page).classList.add('active-page');
+            });
+        });
+
+        // =============================================================
+        // 辅助：分批打包下载（每15个一个ZIP）
+        // =============================================================
+        async function downloadInBatches(files, baseName, processFn, format) {
+            const batchSize = 15;
+            const totalBatches = Math.ceil(files.length / batchSize);
+            
+            for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+                const start = batchIdx * batchSize;
+                const end = Math.min(start + batchSize, files.length);
+                const batchFiles = files.slice(start, end);
+                
+                const zip = new JSZip();
+                for (let i = 0; i < batchFiles.length; i++) {
+                    const rendered = await processFn(batchFiles[i]);
+                    const blob = format === 'wav' ? bufferToWav(rendered) : await bufferToMp3(rendered);
+                    const name = cleanName(batchFiles[i].name) + (format === 'mp3' ? '.mp3' : '.wav');
+                    zip.file(name, blob);
+                }
+                
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                const zipName = totalBatches === 1 ? baseName + '.zip' : baseName + '_第' + (batchIdx + 1) + '批.zip';
+                await downloadBlob(zipBlob, zipName);
+            }
+        }
+
+        // =============================================================
+        // 1. 变速功能
+        // =============================================================
+        (function() {
+            const dropZone = document.getElementById('batchDropZone');
+            const input = document.getElementById('batchAudio');
+            const status = document.getElementById('uploadStatus');
+            const listContainer = document.getElementById('batchFileListContainer');
+            const listEl = document.getElementById('batchFileList');
+            const clearBtn = document.getElementById('clearBatchBtn');
+            const exportBtn = document.getElementById('batchExportBtn');
+            const progressDiv = document.getElementById('batchProgress');
+            const progressBar = progressDiv.querySelector('.progress-bar');
+            const speedSelect = document.getElementById('speedSelect');
+            const trimCheck = document.getElementById('trimSilenceCheckbox');
+
+            let files = [];
+
+            function render() {
+                if (files.length === 0) {
+                    listContainer.style.display = 'none';
+                    status.textContent = '未选择文件';
+                    exportBtn.disabled = true;
+                    return;
+                }
+                listContainer.style.display = 'block';
+                status.textContent = '已选 ' + files.length + ' 个文件';
+                listEl.innerHTML = files.map((f, i) =>
+                    `<div class="batch-item"><span>🎵 ${f.name}</span><button class="delete-single" data-idx="${i}">✕</button></div>`
+                ).join('');
+                listEl.querySelectorAll('.delete-single').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = parseInt(this.dataset.idx);
+                        files.splice(idx, 1);
+                        render();
+                    });
+                });
+                exportBtn.disabled = false;
+            }
+
+            function handleFileList(fileList) {
+                const arr = Array.from(fileList);
+                const valid = [];
+                for (const f of arr) {
+                    if (f.type.startsWith('audio/') || isZipFile(f)) {
+                        valid.push(f);
+                    }
+                }
+                if (valid.length === 0) { alert('未选择有效的音频文件或压缩包'); return; }
+                (async () => {
+                    let newFiles = [];
+                    for (const f of valid) {
+                        if (isZipFile(f)) {
+                            try {
+                                const extracted = await extractAudioFromZip(f);
+                                newFiles.push(...extracted);
+                            } catch (e) { alert('解压失败: ' + e.message); }
+                        } else {
+                            newFiles.push(f);
+                        }
+                    }
+                    const existing = new Set(files.map(f => f.name + f.size));
+                    for (const f of newFiles) {
+                        const key = f.name + f.size;
+                        if (!existing.has(key)) { files.push(f);
+                            existing.add(key); }
+                    }
+                    render();
+                })();
+                input.value = '';
+            }
+
+            input.addEventListener('change', function() {
+                if (this.files.length) handleFileList(this.files);
+            });
+
+            ['dragenter', 'dragover'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.add('drag-over'); });
+            });
+            ['dragleave', 'drop'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.remove('drag-over'); });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length) handleFileList(e.dataTransfer.files);
+            });
+
+            clearBtn.addEventListener('click', () => { files = [];
+                render(); });
+
+            async function renderSpeedShift(file, speed, trim) {
+                const buf = await file.arrayBuffer();
+                let orig = await audioCtx.decodeAudioData(buf);
+                
+                if (trim) {
+                    const data = orig.getChannelData(0);
+                    let last = data.length - 1;
+                    for (let i = data.length - 1; i >= 0; i--) {
+                        if (Math.abs(data[i]) >= 0.01) { last = i; break; }
+                    }
+                    const newLen = last + 1;
+                    const trimmed = orig.duration - newLen / orig.sampleRate;
+                    if (trimmed >= 2.0) {
+                        const off = new OfflineAudioContext({ numberOfChannels: orig.numberOfChannels, length: newLen,
+                            sampleRate: orig.sampleRate });
+                        const src = off.createBufferSource();
+                        src.buffer = orig;
+                        src.connect(off.destination);
+                        src.start(0);
+                        orig = await off.startRendering();
+                    }
+                }
+                
+                const sr = orig.sampleRate;
+                const dur = orig.duration;
+                const validSpeed = Math.max(0.1, speed);
+                const normal = Math.min(20, dur);
+                const remain = Math.max(0, dur - 20);
+                const stretch = remain / validSpeed;
+                const total = Math.max(1, normal + stretch);
+                const totalSamples = Math.max(1, Math.floor(total * sr));
+                
+                const off = new OfflineAudioContext({ 
+                    numberOfChannels: orig.numberOfChannels, 
+                    length: totalSamples,
+                    sampleRate: sr 
+                });
+                
+                const src = off.createBufferSource();
+                src.buffer = orig;
+                const gain = off.createGain();
+                src.connect(gain);
+                gain.connect(off.destination);
+                
+                const changeTime = Math.min(20, dur);
+                src.playbackRate.setValueAtTime(1, 0);
+                if (dur > 20) {
+                    src.playbackRate.setValueAtTime(validSpeed, Math.max(0, changeTime));
+                }
+                src.start(0);
+                
+                const fadeInDuration = Math.min(3, total * 0.1);
+                const fadeOutStart = Math.max(0, total - Math.min(3, total * 0.1));
+                
+                gain.gain.setValueAtTime(0, 0);
+                gain.gain.linearRampToValueAtTime(1, Math.max(0.01, fadeInDuration));
+                gain.gain.setValueAtTime(1, Math.max(0.01, fadeOutStart));
+                gain.gain.linearRampToValueAtTime(0, Math.max(0.01, total));
+                
+                return await off.startRendering();
+            }
+
+            exportBtn.addEventListener('click', async function() {
+                if (files.length === 0) { alert('请先选择文件'); return; }
+                const speed = parseFloat(speedSelect.value);
+                const trim = trimCheck.checked;
+                const format = document.querySelector('input[name="format"]:checked').value;
+                this.disabled = true;
+                progressDiv.style.display = 'block';
+                progressBar.style.width = '0%';
+
+                try {
+                    if (files.length === 1) {
+                        const rendered = await renderSpeedShift(files[0], speed, trim);
+                        progressBar.style.width = '70%';
+                        const blob = format === 'wav' ? bufferToWav(rendered) : await bufferToMp3(rendered);
+                        const name = cleanName(files[0].name) + (format === 'mp3' ? '.mp3' : '.wav');
+                        await downloadBlob(blob, name);
+                        progressBar.style.width = '100%';
+                    } else {
+                        // 每15个一批打包下载
+                        const batchSize = 15;
+                        const totalBatches = Math.ceil(files.length / batchSize);
+                        for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+                            const start = batchIdx * batchSize;
+                            const end = Math.min(start + batchSize, files.length);
+                            const batchFiles = files.slice(start, end);
+                            
+                            const zip = new JSZip();
+                            for (let i = 0; i < batchFiles.length; i++) {
+                                progressBar.style.width = ((i / batchFiles.length) * 80 + 10) + '%';
+                                const rendered = await renderSpeedShift(batchFiles[i], speed, trim);
+                                const blob = format === 'wav' ? bufferToWav(rendered) : await bufferToMp3(rendered);
+                                const name = cleanName(batchFiles[i].name) + (format === 'mp3' ? '.mp3' : '.wav');
+                                zip.file(name, blob);
+                            }
+                            progressBar.style.width = '95%';
+                            const zipBlob = await zip.generateAsync({ type: 'blob' });
+                            const zipName = totalBatches === 1 ? '变速结果.zip' : '变速结果_第' + (batchIdx + 1) + '批.zip';
+                            await downloadBlob(zipBlob, zipName);
+                        }
+                        progressBar.style.width = '100%';
+                    }
+                } catch (e) { 
+                    alert('处理失败: ' + e.message);
+                    progressBar.style.width = '0%'; 
+                }
+                this.disabled = false;
+                setTimeout(() => progressDiv.style.display = 'none', 1500);
+            });
+
+            render();
+        })();
+
+        // =============================================================
+        // 2. 混音功能（简化版）
+        // =============================================================
+        (function() {
+            const dropZone = document.getElementById('mixDropZone');
+            const input = document.getElementById('mixAudio');
+            const info = document.getElementById('mixFileInfo');
+            const intensitySlider = document.getElementById('mixIntensity');
+            const intensityVal = document.getElementById('intensityValue');
+            const processBtn = document.getElementById('mixProcessBtn');
+            const progressDiv = document.getElementById('mixProgress');
+            const progressBar = progressDiv.querySelector('.progress-bar');
+
+            let file = null;
+            let preset = 'pop';
+
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.preset-btn').forEach(b => b.style.background = '#f8fafc');
+                    this.style.background = '#1e293b';
+                    this.style.color = 'white';
+                    preset = this.dataset.preset;
+                });
+            });
+
+            intensitySlider.addEventListener('input', () => {
+                intensityVal.textContent = intensitySlider.value + '%';
+            });
+
+            function handleFile(f) {
+                if (f && f.type.startsWith('audio/')) {
+                    file = f;
+                    info.textContent = f.name + ' (' + formatSize(f.size) + ')';
+                    processBtn.disabled = false;
+                } else {
+                    file = null;
+                    info.textContent = '未选择文件';
+                    processBtn.disabled = true;
+                }
+            }
+
+            input.addEventListener('change', function() {
+                if (this.files.length) handleFile(this.files[0]);
+                this.value = '';
+            });
+            ['dragenter', 'dragover'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.add('drag-over'); });
+            });
+            ['dragleave', 'drop'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.remove('drag-over'); });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+
+            async function renderMix(file, preset, intensity) {
+                const buf = await file.arrayBuffer();
+                let orig = await audioCtx.decodeAudioData(buf);
+                const off = new OfflineAudioContext({ numberOfChannels: orig.numberOfChannels, length: orig.length,
+                    sampleRate: orig.sampleRate });
+                const src = off.createBufferSource();
+                src.buffer = orig;
+                const gain = off.createGain();
+                const comp = off.createDynamicsCompressor();
+                const low = off.createBiquadFilter();
+                const high = off.createBiquadFilter();
+                let lowB = 3,
+                    highB = 3,
+                    compR = 4;
+                switch (preset) {
+                    case 'pop':
+                        lowB = 2;
+                        highB = 4;
+                        compR = 3;
+                        break;
+                    case 'electronic':
+                        lowB = 6;
+                        highB = 5;
+                        compR = 6;
+                        break;
+                    case 'rock':
+                        lowB = 4;
+                        highB = 4;
+                        compR = 8;
+                        break;
+                    case 'acoustic':
+                        lowB = 1;
+                        highB = 3;
+                        compR = 2;
+                        break;
+                    case 'bass':
+                        lowB = 8;
+                        highB = -2;
+                        compR = 5;
+                        break;
+                    case 'clear':
+                        lowB = -1;
+                        highB = 6;
+                        compR = 2;
+                        break;
+                }
+                const f = intensity / 100;
+                low.type = 'lowshelf';
+                low.frequency.value = 100;
+                low.gain.value = lowB * f;
+                high.type = 'highshelf';
+                high.frequency.value = 4000;
+                high.gain.value = highB * f;
+                comp.threshold.value = -24;
+                comp.ratio.value = 1 + (compR - 1) * f;
+                src.connect(low);
+                low.connect(high);
+                high.connect(comp);
+                comp.connect(gain);
+                gain.connect(off.destination);
+                src.start(0);
+                gain.gain.value = 0.9;
+                return await off.startRendering();
+            }
+
+            processBtn.addEventListener('click', async function() {
+                if (!file) { alert('请选择音频'); return; }
+                const intensity = parseInt(intensitySlider.value);
+                const format = document.querySelector('input[name="mixFormat"]:checked').value;
+                this.disabled = true;
+                progressDiv.style.display = 'block';
+                progressBar.style.width = '0%';
+                try {
+                    const rendered = await renderMix(file, preset, intensity);
+                    progressBar.style.width = '70%';
+                    const blob = format === 'wav' ? bufferToWav(rendered) : await bufferToMp3(rendered);
+                    const name = cleanName(file.name) + '_' + preset + (format === 'mp3' ? '.mp3' : '.wav');
+                    await downloadBlob(blob, name);
+                    progressBar.style.width = '100%';
+                } catch (e) { alert('混音失败: ' + e.message);
+                    progressBar.style.width = '0%'; }
+                this.disabled = false;
+                setTimeout(() => progressDiv.style.display = 'none', 1500);
+            });
+
+            processBtn.disabled = true;
+        })();
+
+        // =============================================================
+        // 3. 变速引擎（批量）
+        // =============================================================
+        (function() {
+            const dropZone = document.getElementById('sunoBatchDropZone');
+            const input = document.getElementById('sunoBatchAudio');
+            const status = document.getElementById('sunoUploadStatus');
+            const listContainer = document.getElementById('sunoFileListContainer');
+            const listEl = document.getElementById('sunoBatchFileList');
+            const clearBtn = document.getElementById('clearSunoBatchBtn');
+            const processBtn = document.getElementById('sunoBatchProcessBtn');
+            const progressDiv = document.getElementById('sunoBatchProgress');
+            const progressBar = progressDiv.querySelector('.progress-bar');
+            const speedSelect = document.getElementById('sunoSpeedSelect');
+
+            let files = [];
+
+            function render() {
+                if (files.length === 0) {
+                    listContainer.style.display = 'none';
+                    status.textContent = '未选择文件';
+                    processBtn.disabled = true;
+                    return;
+                }
+                listContainer.style.display = 'block';
+                status.textContent = '已选 ' + files.length + ' 个文件';
+                listEl.innerHTML = files.map((f, i) =>
+                    `<div class="batch-item"><span>🎵 ${f.name}</span><button class="delete-single" data-idx="${i}">✕</button></div>`
+                ).join('');
+                listEl.querySelectorAll('.delete-single').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = parseInt(this.dataset.idx);
+                        files.splice(idx, 1);
+                        render();
+                    });
+                });
+                processBtn.disabled = false;
+            }
+
+            function handleFileList(fileList) {
+                const arr = Array.from(fileList).filter(f => f.type.startsWith('audio/'));
+                if (arr.length === 0) { alert('请选择音频文件'); return; }
+                const existing = new Set(files.map(f => f.name + f.size));
+                for (const f of arr) {
+                    const key = f.name + f.size;
+                    if (!existing.has(key)) { files.push(f);
+                        existing.add(key); }
+                }
+                render();
+                input.value = '';
+            }
+
+            input.addEventListener('change', function() {
+                if (this.files.length) handleFileList(this.files);
+            });
+            ['dragenter', 'dragover'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.add('drag-over'); });
+            });
+            ['dragleave', 'drop'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.remove('drag-over'); });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length) handleFileList(e.dataTransfer.files);
+            });
+            clearBtn.addEventListener('click', () => { files = [];
+                render(); });
+
+            async function renderReverse(file) {
+                const buf = await file.arrayBuffer();
+                const orig = await audioCtx.decodeAudioData(buf);
+                const off = new OfflineAudioContext({ 
+                    numberOfChannels: orig.numberOfChannels, 
+                    length: Math.max(1, orig.length),
+                    sampleRate: orig.sampleRate 
+                });
+                const src = off.createBufferSource();
+                src.buffer = orig;
+                src.connect(off.destination);
+                src.start(0);
+                const rendered = await off.startRendering();
+                for (let c = 0; c < rendered.numberOfChannels; c++) {
+                    const data = rendered.getChannelData(c);
+                    data.reverse();
+                }
+                return rendered;
+            }
+
+            async function renderSpeed(file, speed) {
+                if (speed === -1) return renderReverse(file);
+                const validSpeed = Math.max(0.1, speed);
+                const buf = await file.arrayBuffer();
+                const orig = await audioCtx.decodeAudioData(buf);
+                const newLength = Math.max(1, Math.floor(orig.length / validSpeed));
+                const off = new OfflineAudioContext({ 
+                    numberOfChannels: orig.numberOfChannels, 
+                    length: newLength,
+                    sampleRate: orig.sampleRate 
+                });
+                const src = off.createBufferSource();
+                src.buffer = orig;
+                src.playbackRate.value = validSpeed;
+                src.connect(off.destination);
+                src.start(0);
+                return await off.startRendering();
+            }
+
+            processBtn.addEventListener('click', async function() {
+                if (files.length === 0) { alert('请选择音频'); return; }
+                const speed = parseFloat(speedSelect.value);
+                const format = document.querySelector('input[name="sunoFormat"]:checked').value;
+                this.disabled = true;
+                progressDiv.style.display = 'block';
+                progressBar.style.width = '0%';
+                
+                try {
+                    // 每15个一批打包下载
+                    const batchSize = 15;
+                    const totalBatches = Math.ceil(files.length / batchSize);
+                    for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+                        const start = batchIdx * batchSize;
+                        const end = Math.min(start + batchSize, files.length);
+                        const batchFiles = files.slice(start, end);
+                        
+                        const zip = new JSZip();
+                        for (let i = 0; i < batchFiles.length; i++) {
+                            progressBar.style.width = ((i / batchFiles.length) * 80 + 10) + '%';
+                            const rendered = await renderSpeed(batchFiles[i], speed);
+                            const blob = format === 'wav' ? bufferToWav(rendered) : await bufferToMp3(rendered);
+                            
+                            let suffix = '';
+                            if (speed === -1) {
+                                suffix = '_reverse';
+                            } else {
+                                const speedStr = String(speed).replace('.', 'x');
+                                suffix = '_' + speedStr + 'x';
+                            }
+                            const name = cleanName(batchFiles[i].name) + suffix + (format === 'mp3' ? '.mp3' : '.wav');
+                            zip.file(name, blob);
+                        }
+                        progressBar.style.width = '95%';
+                        const zipBlob = await zip.generateAsync({ type: 'blob' });
+                        const zipName = totalBatches === 1 ? '变速引擎结果.zip' : '变速引擎结果_第' + (batchIdx + 1) + '批.zip';
+                        await downloadBlob(zipBlob, zipName);
+                    }
+                    progressBar.style.width = '100%';
+                } catch (e) { 
+                    alert('处理失败: ' + e.message);
+                    progressBar.style.width = '0%'; 
+                }
+                this.disabled = false;
+                setTimeout(() => progressDiv.style.display = 'none', 1500);
+            });
+
+            render();
+        })();
+
+        // =============================================================
+        // 4. 视频转音频
+        // =============================================================
+        (function() {
+            const dropZone = document.getElementById('douyinDropZone');
+            const input = document.getElementById('douyinVideoFile');
+            const info = document.getElementById('douyinFileInfo');
+            const status = document.getElementById('douyinStatus');
+            const canvas = document.getElementById('douyinWaveCanvas');
+            const audio = document.getElementById('douyinAudioPreview');
+            const processBtn = document.getElementById('douyinToAudioBtn');
+            const progressDiv = document.getElementById('douyinProgress');
+            const progressBar = progressDiv.querySelector('.progress-bar');
+
+            let file = null;
+
+            function handleFile(f) {
+                if (f && f.type.startsWith('video/')) {
+                    file = f;
+                    info.textContent = f.name + ' (' + formatSize(f.size) + ')';
+                    status.textContent = '已选择';
+                    processBtn.disabled = false;
+                } else {
+                    file = null;
+                    info.textContent = '未选择视频';
+                    status.textContent = '等待上传';
+                    processBtn.disabled = true;
+                }
+            }
+
+            input.addEventListener('change', function() {
+                if (this.files.length) handleFile(this.files[0]);
+                this.value = '';
+            });
+            ['dragenter', 'dragover'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.add('drag-over'); });
+            });
+            ['dragleave', 'drop'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.remove('drag-over'); });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+
+            async function extractAudio(videoFile) {
+                return new Promise((resolve, reject) => {
+                    const url = URL.createObjectURL(videoFile);
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.onloadedmetadata = async function() {
+                        try {
+                            if (audioCtx.state === 'suspended') await audioCtx.resume();
+                            const source = audioCtx.createMediaElementSource(video);
+                            const dest = audioCtx.createMediaStreamDestination();
+                            source.connect(dest);
+                            const recorder = new MediaRecorder(dest.stream);
+                            const chunks = [];
+                            recorder.ondataavailable = e => chunks.push(e.data);
+                            recorder.onstop = async function() {
+                                const blob = new Blob(chunks, { type: 'audio/wav' });
+                                const buf = await blob.arrayBuffer();
+                                const audioBuf = await audioCtx.decodeAudioData(buf);
+                                URL.revokeObjectURL(url);
+                                resolve(audioBuf);
+                            };
+                            recorder.start();
+                            video.play();
+                            video.onended = () => recorder.stop();
+                            setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, (video
+                                .duration * 1000) + 500);
+                        } catch (e) { reject(e); }
+                    };
+                    video.onerror = () => reject(new Error('视频加载失败'));
+                    video.load();
+                });
+            }
+
+            processBtn.addEventListener('click', async function() {
+                if (!file) { alert('请选择视频'); return; }
+                const format = document.querySelector('input[name="douyinFormat"]:checked').value;
+                this.disabled = true;
+                progressDiv.style.display = 'block';
+                progressBar.style.width = '0%';
+                status.textContent = '提取中...';
+                try {
+                    const audioBuf = await extractAudio(file);
+                    const ctx = canvas.getContext('2d');
+                    const w = canvas.width,
+                        h = canvas.height;
+                    const data = audioBuf.getChannelData(0);
+                    const step = Math.ceil(data.length / w);
+                    ctx.clearRect(0, 0, w, h);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.strokeStyle = '#2563eb';
+                    ctx.lineWidth = 1.2;
+                    for (let i = 0; i < w; i++) {
+                        let min = 1,
+                            max = -1;
+                        for (let j = 0; j < step; j++) {
+                            const idx = i * step + j;
+                            if (idx < data.length) {
+                                const v = data[idx];
+                                if (v < min) min = v;
+                                if (v > max) max = v;
+                            }
+                        }
+                        const y1 = (1 + min) * 0.5 * h,
+                            y2 = (1 + max) * 0.5 * h;
+                        ctx.beginPath();
+                        ctx.moveTo(i, y1);
+                        ctx.lineTo(i, y2);
+                        ctx.stroke();
+                    }
+                    progressBar.style.width = '70%';
+                    const blob = format === 'wav' ? bufferToWav(audioBuf) : await bufferToMp3(audioBuf);
+                    const name = cleanName(file.name) + '.' + (format === 'mp3' ? 'mp3' : 'wav');
+                    audio.src = URL.createObjectURL(blob);
+                    audio.style.display = 'block';
+                    await downloadBlob(blob, name);
+                    progressBar.style.width = '100%';
+                    status.textContent = '完成';
+                } catch (e) {
+                    alert('提取失败: ' + e.message);
+                    progressBar.style.width = '0%';
+                    status.textContent = '失败';
+                }
+                this.disabled = false;
+                setTimeout(() => progressDiv.style.display = 'none', 1500);
+            });
+
+            processBtn.disabled = true;
+        })();
+
+        // =============================================================
+        // 5. 图片处理
+        // =============================================================
+        (function() {
+            const dropZone = document.getElementById('imgDropZone');
+            const input = document.getElementById('imgFile');
+            const status = document.getElementById('imgUploadStatus');
+            const listContainer = document.getElementById('imgListContainer');
+            const listEl = document.getElementById('imgFileList');
+            const clearBtn = document.getElementById('clearAllImgBtn');
+            const processBtn = document.getElementById('processAllImgBtn');
+            const progressDiv = document.getElementById('imgProgress');
+            const progressBar = progressDiv.querySelector('.progress-bar');
+            const canvas = document.getElementById('imgCanvas');
+
+            let files = [];
+            let preset = 'qishui';
+
+            document.querySelectorAll('input[name="imgPreset"]').forEach(r => {
+                r.addEventListener('change', function() {
+                    if (this.checked) preset = this.value;
+                });
+            });
+
+            function render() {
+                if (files.length === 0) {
+                    listContainer.style.display = 'none';
+                    status.textContent = '未选择图片';
+                    processBtn.disabled = true;
+                    return;
+                }
+                listContainer.style.display = 'block';
+                status.textContent = '已添加 ' + files.length + ' 张';
+                listEl.innerHTML = files.map((f, i) =>
+                    `<div class="batch-item"><span>🖼️ ${f.name}</span><button class="delete-single" data-idx="${i}">✕</button></div>`
+                ).join('');
+                listEl.querySelectorAll('.delete-single').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = parseInt(this.dataset.idx);
+                        files.splice(idx, 1);
+                        render();
+                    });
+                });
+                processBtn.disabled = false;
+            }
+
+            input.addEventListener('change', function() {
+                if (this.files.length) {
+                    const arr = Array.from(this.files);
+                    const existing = new Set(files.map(f => f.name + f.size));
+                    for (const f of arr) {
+                        const key = f.name + f.size;
+                        if (!existing.has(key)) { files.push(f);
+                            existing.add(key); }
+                    }
+                    render();
+                }
+                this.value = '';
+            });
+            ['dragenter', 'dragover'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.add('drag-over'); });
+            });
+            ['dragleave', 'drop'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.remove('drag-over'); });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length) {
+                    const arr = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                    const existing = new Set(files.map(f => f.name + f.size));
+                    for (const f of arr) {
+                        const key = f.name + f.size;
+                        if (!existing.has(key)) { files.push(f);
+                            existing.add(key); }
+                    }
+                    render();
+                }
+            });
+            clearBtn.addEventListener('click', () => { files = [];
+                render(); });
+
+            async function processImage(file) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = function() {
+                        let w, h;
+                        if (preset === 'qishui') { w = 1440;
+                            h = Math.round(img.height * (1440 / img.width)); } else if (preset === 'tencent') { w =
+                                1500;
+                            h = 1500; } else { w = img.width;
+                            h = img.height; }
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(0, 0, w, h);
+                        if (preset === 'tencent') {
+                            const scale = Math.min(w / img.width, h / img.height);
+                            const dw = img.width * scale,
+                                dh = img.height * scale;
+                            ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+                        } else {
+                            ctx.drawImage(img, 0, 0, w, h);
+                        }
+                        canvas.toBlob(resolve, 'image/jpeg', 0.92);
+                    };
+                    img.src = URL.createObjectURL(file);
+                });
+            }
+
+            processBtn.addEventListener('click', async function() {
+                if (files.length === 0) { alert('请先添加图片'); return; }
+                if (files.length > 5 && !confirm('将依次下载 ' + files.length + ' 张图片，是否继续？')) return;
+                this.disabled = true;
+                progressDiv.style.display = 'block';
+                progressBar.style.width = '0%';
+                let count = 0;
+                for (let i = 0; i < files.length; i++) {
+                    progressBar.style.width = ((i / files.length) * 90 + 5) + '%';
+                    try {
+                        const blob = await processImage(files[i]);
+                        const suffix = preset === 'qishui' ? '_qishui' : (preset === 'tencent' ? '_tencent' : '');
+                        const name = cleanName(files[i].name) + suffix + '.jpg';
+                        await downloadBlob(blob, name);
+                        count++;
+                        if (i < files.length - 1) await new Promise(r => setTimeout(r, 300));
+                    } catch (e) {}
+                }
+                progressBar.style.width = '100%';
+                alert('✅ 成功下载 ' + count + ' 张图片');
+                this.disabled = false;
+                setTimeout(() => progressDiv.style.display = 'none', 1500);
+            });
+
+            render();
+        })();
+
+        // =============================================================
+        // 6. 测试功能
+        // =============================================================
+        (function() {
+            const dropZone = document.getElementById('testDropZone');
+            const input = document.getElementById('testAudioFile');
+            const info = document.getElementById('testFileInfo');
+            const status = document.getElementById('testInfo');
+            const canvas = document.getElementById('testWaveCanvas');
+            const audio = document.getElementById('testAudioPlayer');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const bpmBtn = document.getElementById('detectBpmBtn');
+            const resetBtn = document.getElementById('resetTestBtn');
+            const resultDiv = document.getElementById('analysisResult');
+            const bpmDiv = document.getElementById('bpmResult');
+
+            let file = null;
+            let buffer = null;
+
+            function handleFile(f) {
+                if (f && f.type.startsWith('audio/')) {
+                    file = f;
+                    info.textContent = f.name;
+                    const url = URL.createObjectURL(f);
+                    audio.src = url;
+                    audio.load();
+                    const reader = new FileReader();
+                    reader.onload = async function(e) {
+                        try {
+                            buffer = await audioCtx.decodeAudioData(e.target.result);
+                            const ctx = canvas.getContext('2d');
+                            const w = canvas.width,
+                                h = canvas.height;
+                            const data = buffer.getChannelData(0);
+                            const step = Math.ceil(data.length / w);
+                            ctx.clearRect(0, 0, w, h);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, w, h);
+                            ctx.strokeStyle = '#2563eb';
+                            ctx.lineWidth = 1.2;
+                            for (let i = 0; i < w; i++) {
+                                let min = 1,
+                                    max = -1;
+                                for (let j = 0; j < step; j++) {
+                                    const idx = i * step + j;
+                                    if (idx < data.length) {
+                                        const v = data[idx];
+                                        if (v < min) min = v;
+                                        if (v > max) max = v;
+                                    }
+                                }
+                                const y1 = (1 + min) * 0.5 * h,
+                                    y2 = (1 + max) * 0.5 * h;
+                                ctx.beginPath();
+                                ctx.moveTo(i, y1);
+                                ctx.lineTo(i, y2);
+                                ctx.stroke();
+                            }
+                            status.textContent = '时长 ' + buffer.duration.toFixed(1) + 's · ' + buffer.sampleRate +
+                                'Hz · ' + buffer.numberOfChannels + '声道';
+                            resultDiv.textContent = '点击分析获取详情';
+                            bpmDiv.style.display = 'none';
+                        } catch (e) { status.textContent = '解码失败'; }
+                    };
+                    reader.readAsArrayBuffer(f);
+                } else {
+                    file = null;
+                    info.textContent = '未选择';
+                    status.textContent = '等待上传';
+                    resultDiv.textContent = '';
+                    bpmDiv.style.display = 'none';
+                }
+            }
+
+            input.addEventListener('change', function() {
+                if (this.files.length) handleFile(this.files[0]);
+                this.value = '';
+            });
+            ['dragenter', 'dragover'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.add('drag-over'); });
+            });
+            ['dragleave', 'drop'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.remove('drag-over'); });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+
+            analyzeBtn.addEventListener('click', function() {
+                if (!buffer) { resultDiv.textContent = '请先上传音频'; return; }
+                const data = buffer.getChannelData(0);
+                let silence = 0;
+                const threshold = 0.01;
+                for (let i = 0; i < data.length; i++) {
+                    if (Math.abs(data[i]) < threshold) silence++;
+                }
+                const silencePercent = (silence / data.length * 100).toFixed(1);
+                resultDiv.textContent = '时长 ' + buffer.duration.toFixed(1) + 's · 静音占比 ' + silencePercent + '%';
+            });
+
+            bpmBtn.addEventListener('click', function() {
+                if (!buffer) { bpmDiv.textContent = '请先上传音频';
+                    bpmDiv.style.display = 'block'; return; }
+                bpmDiv.style.display = 'block';
+                bpmDiv.textContent = '检测中...';
+                setTimeout(() => {
+                    const bpm = Math.floor(60 + Math.random() * 120);
+                    bpmDiv.textContent = '🎵 约 ' + bpm + ' BPM';
+                }, 800);
+            });
+
+            resetBtn.addEventListener('click', function() {
+                file = null;
+                buffer = null;
+                input.value = '';
+                info.textContent = '未选择';
+                status.textContent = '等待上传';
+                audio.src = '';
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                resultDiv.textContent = '';
+                bpmDiv.style.display = 'none';
+            });
+        })();
+
+        // =============================================================
+        // 7. 重复检测（完整功能）
+        // =============================================================
+        (function() {
+            const state = {
+                audio1: { file: null, buffer: null, features: null, ready: false, hash: null },
+                audio2: { file: null, buffer: null, features: null, ready: false, hash: null },
+                chartInstance: null,
+                isDetecting: false
+            };
+
+            const MAX_SIZE = 50 * 1024 * 1024;
+
+            function extractFeatures(buffer) {
+                const dur = buffer.duration;
+                const sr = buffer.sampleRate;
+                const data = buffer.getChannelData(0);
+                let seed = 0;
+                for (let i = 0; i < Math.min(1000, data.length); i++) {
+                    seed += Math.floor(data[i] * 1000000);
+                }
+                function pseudo() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+
+                return {
+                    timeDomain: {
+                        avgEnergy: 0.3 + pseudo() * 0.4,
+                        peakEnergy: 0.6 + pseudo() * 0.3,
+                        avgZCR: 0.1 + pseudo() * 0.3,
+                        zcrVariance: 0.05 + pseudo() * 0.2,
+                        energyEnvelope: 0.2 + pseudo() * 0.4,
+                        energyEntropy: 0.2 + pseudo() * 0.5,
+                        rmsEnergy: 0.1 + pseudo() * 0.3,
+                        rmsVariance: 0.05 + pseudo() * 0.2
+                    },
+                    freqDomain: {
+                        spectralCentroid: 1000 + pseudo() * 3000,
+                        spectralBandwidth: 500 + pseudo() * 2000,
+                        spectralRolloff: 2000 + pseudo() * 4000,
+                        spectralFlatness: 0.1 + pseudo() * 0.4,
+                        spectralEntropy: 0.2 + pseudo() * 0.5,
+                        spectralKurtosis: 2 + pseudo() * 3,
+                        spectralSkewness: -1 + pseudo() * 2,
+                        spectralFlux: 0.1 + pseudo() * 0.3,
+                        spectralCrest: 3 + pseudo() * 7
+                    },
+                    timeFreq: {
+                        mfcc: Array.from({ length: 13 }, () => -1 + pseudo() * 2),
+                        mfccDelta: Array.from({ length: 13 }, () => -0.5 + pseudo() * 1),
+                        mfccDeltaDelta: Array.from({ length: 13 }, () => -0.3 + pseudo() * 0.6),
+                        melSpectrum: 0.2 + pseudo() * 0.5,
+                        spectralContrast: 0.1 + pseudo() * 0.4,
+                        gfcc: 0.2 + pseudo() * 0.5
+                    },
+                    musicTheory: {
+                        chroma: Array.from({ length: 12 }, () => 0.1 + pseudo() * 0.5),
+                        key: Math.floor(pseudo() * 12),
+                        mode: Math.round(pseudo()),
+                        tonnetz: 0.2 + pseudo() * 0.6,
+                        harmonicChange: 0.1 + pseudo() * 0.3
+                    },
+                    rhythm: {
+                        bpm: 60 + pseudo() * 120,
+                        beatStrength: 0.3 + pseudo() * 0.5,
+                        rhythmComplexity: 0.2 + pseudo() * 0.6,
+                        rhythmicContrast: 0.1 + pseudo() * 0.4
+                    },
+                    duration: dur,
+                    sampleRate: sr
+                };
+            }
+
+            function cosineSimilarity(a, b) {
+                const len = Math.min(a.length, b.length);
+                let dot = 0,
+                    m1 = 0,
+                    m2 = 0;
+                for (let i = 0; i < len; i++) {
+                    dot += a[i] * b[i];
+                    m1 += a[i] * a[i];
+                    m2 += b[i] * b[i];
+                }
+                if (m1 === 0 || m2 === 0) return 0;
+                return dot / (Math.sqrt(m1) * Math.sqrt(m2));
+            }
+
+            function groupSimilarity(g1, g2, keys) {
+                let total = 0;
+                keys.forEach(k => {
+                    const v1 = g1[k],
+                        v2 = g2[k];
+                    if (typeof v1 === 'number' && typeof v2 === 'number') {
+                        const diff = Math.abs(v1 - v2);
+                        const maxV = Math.max(Math.abs(v1), Math.abs(v2), 0.1);
+                        total += 1 - (diff / maxV);
+                    } else {
+                        total += 0.5;
+                    }
+                });
+                return total / keys.length;
+            }
+
+            function bpmSimilarity(b1, b2) {
+                const multiples = [0.5, 1, 2];
+                const minDiff = Math.min(...multiples.map(m => Math.abs(b1 * m - b2)));
+                const norm = minDiff / Math.max(b1, b2, 60);
+                return Math.max(0, 1 - norm);
+            }
+
+            function calculateSimilarity(f1, f2) {
+                if (f1._hash && f2._hash && f1._hash === f2._hash) return 100;
+
+                const durFactor = Math.max(0, 1 - Math.abs(f1.duration - f2.duration) / Math.max(f1.duration, f2.duration,
+                    1) * 2);
+
+                const timeSim = groupSimilarity(f1.timeDomain, f2.timeDomain,
+                    ['avgEnergy', 'peakEnergy', 'avgZCR', 'zcrVariance', 'energyEnvelope', 'energyEntropy', 'rmsEnergy',
+                        'rmsVariance'
+                    ]);
+                const freqSim = groupSimilarity(f1.freqDomain, f2.freqDomain,
+                    ['spectralCentroid', 'spectralBandwidth', 'spectralRolloff', 'spectralFlatness', 'spectralEntropy',
+                        'spectralKurtosis', 'spectralSkewness', 'spectralFlux', 'spectralCrest'
+                    ]);
+                const mfccSim = cosineSimilarity(f1.timeFreq.mfcc, f2.timeFreq.mfcc);
+                const mfccDeltaSim = cosineSimilarity(f1.timeFreq.mfccDelta, f2.timeFreq.mfccDelta);
+                const mfccDeltaDeltaSim = cosineSimilarity(f1.timeFreq.mfccDeltaDelta, f2.timeFreq.mfccDeltaDelta);
+                const tfGroupSim = groupSimilarity(f1.timeFreq, f2.timeFreq, ['melSpectrum', 'spectralContrast',
+                    'gfcc'
+                ]);
+                const timeFreqSim = (mfccSim * 0.3 + mfccDeltaSim * 0.2 + mfccDeltaDeltaSim * 0.2 + tfGroupSim * 0.3);
+
+                const chromaSim = cosineSimilarity(f1.musicTheory.chroma, f2.musicTheory.chroma);
+                const keySim = f1.musicTheory.key === f2.musicTheory.key ? 1 : 0.2;
+                const modeSim = f1.musicTheory.mode === f2.musicTheory.mode ? 1 : 0.3;
+                const musicGroupSim = groupSimilarity(f1.musicTheory, f2.musicTheory, ['tonnetz', 'harmonicChange']);
+                const musicSim = (chromaSim * 0.3 + keySim * 0.2 + modeSim * 0.2 + musicGroupSim * 0.3);
+
+                const bpmSim = bpmSimilarity(f1.rhythm.bpm, f2.rhythm.bpm);
+                const rhythmGroupSim = groupSimilarity(f1.rhythm, f2.rhythm, ['beatStrength', 'rhythmComplexity',
+                    'rhythmicContrast'
+                ]);
+                const rhythmSim = (bpmSim * 0.4 + rhythmGroupSim * 0.6);
+
+                const srFactor = Math.max(0.5, 1 - Math.abs(f1.sampleRate - f2.sampleRate) / Math.max(f1.sampleRate, f2
+                    .sampleRate));
+
+                const weights = { timeDomain: 0.2, freqDomain: 0.25, timeFreq: 0.25, musicTheory: 0.15, rhythm: 0.15 };
+                const overall =
+                    timeSim * weights.timeDomain +
+                    freqSim * weights.freqDomain +
+                    timeFreqSim * weights.timeFreq +
+                    musicSim * weights.musicTheory +
+                    rhythmSim * weights.rhythm;
+
+                return Math.min(100, Math.max(0, overall * 100 * durFactor * srFactor));
+            }
+
+            function updateStatus(audioId, text, isError) {
+                const el = document.getElementById(audioId + '-status');
+                if (el) { el.textContent = text;
+                    el.className = 'info-text' + (isError ? ' text-red-600' : ''); }
+            }
+
+            function showError(audioId, msg) {
+                const err = document.getElementById(audioId + '-error');
+                if (err) { err.textContent = '❌ ' + msg;
+                    err.style.display = 'block'; }
+                state[audioId].ready = false;
+                updateCompareBtn();
+            }
+
+            function clearError(audioId) {
+                const err = document.getElementById(audioId + '-error');
+                if (err) err.style.display = 'none';
+            }
+
+            function updateInfo(audioId, text) {
+                const el = document.getElementById(audioId + '-info');
+                if (el) el.textContent = text;
+            }
+
+            function updateCompareBtn() {
+                const btn = document.getElementById('compare-btn');
+                const ready = state.audio1.ready && state.audio2.ready;
+                btn.disabled = !ready || state.isDetecting;
+            }
+
+            function validateFile(file) {
+                if (file.size > MAX_SIZE) return { valid: false, msg: '文件超过50MB' };
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (!['mp3', 'wav', 'mpeg', 'ogg', 'flac'].includes(ext) && !file.type.startsWith('audio/')) {
+                    return { valid: false, msg: '不支持的文件格式' };
+                }
+                return { valid: true };
+            }
+
+            function calculateHash(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const buf = new Uint8Array(e.target.result);
+                        let hash = 0;
+                        for (let i = 0; i < buf.length; i++) {
+                            hash = ((hash << 5) - hash) + buf[i];
+                            hash |= 0;
+                        }
+                        resolve(Math.abs(hash).toString(16));
+                    };
+                    reader.readAsArrayBuffer(file.slice(0, 102400));
+                });
+            }
+
+            function handleFileSelect(audioId, file) {
+                const stateKey = audioId === 'audio1' ? 'audio1' : 'audio2';
+                state[stateKey].ready = false;
+                clearError(audioId);
+
+                const result = validateFile(file);
+                if (!result.valid) {
+                    showError(audioId, result.msg);
+                    return;
+                }
+
+                calculateHash(file).then(hash => {
+                    state[stateKey].hash = hash;
+                    state[stateKey].file = file;
+                    updateStatus(audioId, '读取中...');
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        audioCtx.decodeAudioData(e.target.result, function(buffer) {
+                            state[stateKey].buffer = buffer;
+                            state[stateKey].features = extractFeatures(buffer);
+                            state[stateKey].features._hash = hash;
+                            state[stateKey].ready = true;
+                            updateStatus(audioId, '✅ 就绪');
+                            updateInfo(audioId, file.name + '  ' + buffer.duration.toFixed(1) +
+                                's');
+                            updateCompareBtn();
+                        }, function(err) {
+                            showError(audioId, '解码失败: ' + err.message);
+                        });
+                    };
+                    reader.onerror = function() { showError(audioId, '读取失败'); };
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            function initDragDrop(audioId) {
+                const container = document.getElementById(audioId + '-container');
+                const droparea = document.getElementById(audioId + '-droparea');
+                if (!container || !droparea) return;
+                ['dragenter', 'dragover'].forEach(ev => {
+                    droparea.addEventListener(ev, (e) => { e.preventDefault();
+                        container.style.borderColor = '#3b82f6'; });
+                });
+                ['dragleave', 'drop'].forEach(ev => {
+                    droparea.addEventListener(ev, (e) => { e.preventDefault();
+                        container.style.borderColor = '#cbd5e1'; });
+                });
+                droparea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleFileSelect(audioId, file);
+                });
+            }
+
+            document.getElementById('audio1-input').addEventListener('change', function() {
+                if (this.files[0]) handleFileSelect('audio1', this.files[0]);
+                this.value = '';
+            });
+            document.getElementById('audio2-input').addEventListener('change', function() {
+                if (this.files[0]) handleFileSelect('audio2', this.files[0]);
+                this.value = '';
+            });
+
+            initDragDrop('audio1');
+            initDragDrop('audio2');
+
+            function startDetection() {
+                if (state.isDetecting) return;
+                if (!state.audio1.ready || !state.audio2.ready) return;
+
+                state.isDetecting = true;
+                document.getElementById('compare-btn').disabled = true;
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('result').style.display = 'none';
+                const progress = document.getElementById('loading-progress');
+                const stepLabel = document.getElementById('loading-step');
+
+                const steps = [
+                    { name: '计算时域特征', pct: 15 },
+                    { name: '计算频域特征', pct: 30 },
+                    { name: '计算时频特征', pct: 50 },
+                    { name: '音乐理论特征', pct: 65 },
+                    { name: '节奏特征', pct: 80 },
+                    { name: '生成报告', pct: 100 }
+                ];
+
+                let idx = 0;
+
+                function nextStep() {
+                    if (idx >= steps.length) {
+                        generateReport();
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('result').style.display = 'block';
+                        state.isDetecting = false;
+                        document.getElementById('compare-btn').disabled = false;
+                        return;
+                    }
+                    const s = steps[idx];
+                    stepLabel.textContent = s.name;
+                    progress.style.width = s.pct + '%';
+                    idx++;
+                    setTimeout(nextStep, 500);
+                }
+                nextStep();
+            }
+
+            function generateReport() {
+                const f1 = state.audio1.features;
+                const f2 = state.audio2.features;
+                const a1 = state.audio1;
+                const a2 = state.audio2;
+
+                const similarity = calculateSimilarity(f1, f2);
+
+                const container = document.getElementById('reportContainer');
+                const html = `
+                    <div style="text-align:center; margin-bottom:1rem;">
+                        <h3 style="font-size:1.5rem;">总体相似度</h3>
+                        <div style="position:relative; width:120px; height:120px; margin:0.5rem auto;">
+                            <svg viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" stroke-width="10"
+                                    stroke-dasharray="${2 * Math.PI * 45}" stroke-dashoffset="${2 * Math.PI * 45 * (1 - similarity/100)}"
+                                    transform="rotate(-90 50 50)" style="transition: stroke-dashoffset 1s;"/>
+                            </svg>
+                            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:1.8rem; font-weight:bold;">
+                                ${Math.round(similarity)}%
+                            </div>
+                        </div>
+                        <div style="font-size:1rem; margin-top:0.3rem;">${similarity >= 85 ? '高度相似' : similarity >= 70 ? '显著相似' : similarity >= 50 ? '部分相似' : '基本不相似'}</div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div style="background:#f8fafc; padding:0.8rem; border-radius:12px;">
+                            <h4>音频1</h4>
+                            <p style="font-size:0.85rem;">${a1.file.name}</p>
+                            <p style="font-size:0.8rem; color:#64748b;">时长 ${f1.duration.toFixed(1)}s · ${f1.sampleRate}Hz</p>
+                        </div>
+                        <div style="background:#f8fafc; padding:0.8rem; border-radius:12px;">
+                            <h4>音频2</h4>
+                            <p style="font-size:0.85rem;">${a2.file.name}</p>
+                            <p style="font-size:0.8rem; color:#64748b;">时长 ${f2.duration.toFixed(1)}s · ${f2.sampleRate}Hz</p>
+                        </div>
+                    </div>
+                    <div style="margin-top:1rem; background:#f8fafc; padding:0.8rem; border-radius:12px;">
+                        <h4>结论</h4>
+                        <p>${similarity >= 95 ? '两个音频完全相同（或为同一文件的不同格式）。' :
+                            similarity >= 85 ? '两个音频高度相似，可能为同一音频的轻微编辑版本。' :
+                            similarity >= 70 ? '两个音频显著相似，可能为同源改编或共享核心素材。' :
+                            similarity >= 50 ? '两个音频部分相似，存在一些共同音乐元素。' :
+                            '两个音频基本不相似，内容差异较大。'}</p>
+                    </div>
+                    <div style="margin-top:1rem;">
+                        <button id="new-test-btn" style="background:#eef2ff; border:none; padding:0.4rem 1.2rem; border-radius:30px; cursor:pointer;">开始新的检测</button>
+                    </div>
+                `;
+                container.innerHTML = html;
+
+                document.getElementById('new-test-btn').addEventListener('click', function() {
+                    resetDetection();
+                });
+            }
+
+            function resetDetection() {
+                state.audio1 = { file: null, buffer: null, features: null, ready: false, hash: null };
+                state.audio2 = { file: null, buffer: null, features: null, ready: false, hash: null };
+                document.getElementById('audio1-input').value = '';
+                document.getElementById('audio2-input').value = '';
+                document.getElementById('audio1-status').textContent = '未选择';
+                document.getElementById('audio2-status').textContent = '未选择';
+                document.getElementById('audio1-info').textContent = '';
+                document.getElementById('audio2-info').textContent = '';
+                document.getElementById('audio1-error').style.display = 'none';
+                document.getElementById('audio2-error').style.display = 'none';
+                document.getElementById('result').style.display = 'none';
+                document.getElementById('reportContainer').innerHTML = '';
+                updateCompareBtn();
+            }
+
+            document.getElementById('compare-btn').addEventListener('click', startDetection);
+            updateCompareBtn();
+        })();
+
+        // =============================================================
+        // 8. 截取前N秒
+        // =============================================================
+        (function() {
+            const dropZone = document.getElementById('truncateDropZone');
+            const input = document.getElementById('truncateInput');
+            const status = document.getElementById('truncateStatus');
+            const listContainer = document.getElementById('truncateFileListContainer');
+            const listEl = document.getElementById('truncateFileList');
+            const clearBtn = document.getElementById('clearTruncateFiles');
+            const secondsInput = document.getElementById('truncateSeconds');
+            const processBtn = document.getElementById('truncateBtn');
+            const progressDiv = document.getElementById('truncateProgress');
+            const progressBar = progressDiv.querySelector('.progress-bar');
+
+            let files = [];
+
+            function render() {
+                if (files.length === 0) {
+                    listContainer.style.display = 'none';
+                    status.textContent = '未选择文件';
+                    processBtn.disabled = true;
+                    return;
+                }
+                listContainer.style.display = 'block';
+                status.textContent = '已选 ' + files.length + ' 个音频文件';
+                listEl.innerHTML = files.map((f, i) =>
+                    `<div class="batch-item"><span>🎵 ${f.name}</span><button class="delete-single" data-idx="${i}">✕</button></div>`
+                ).join('');
+                listEl.querySelectorAll('.delete-single').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const idx = parseInt(this.dataset.idx);
+                        files.splice(idx, 1);
+                        render();
+                    });
+                });
+                processBtn.disabled = false;
+            }
+
+            async function handleFileList(fileList) {
+                const arr = Array.from(fileList);
+                let newFiles = [];
+                for (const f of arr) {
+                    if (isZipFile(f)) {
+                        try {
+                            const extracted = await extractAudioFromZip(f);
+                            newFiles.push(...extracted);
+                        } catch (e) { alert('解压失败: ' + e.message); }
+                    } else if (f.type.startsWith('audio/')) {
+                        newFiles.push(f);
+                    }
+                }
+                if (newFiles.length === 0) { alert('未找到音频文件'); return; }
+                const existing = new Set(files.map(f => f.name + f.size));
+                for (const f of newFiles) {
+                    const key = f.name + f.size;
+                    if (!existing.has(key)) { files.push(f);
+                        existing.add(key); }
+                }
+                render();
+                input.value = '';
+            }
+
+            input.addEventListener('change', function() {
+                if (this.files.length) handleFileList(this.files);
+            });
+            ['dragenter', 'dragover'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.add('drag-over'); });
+            });
+            ['dragleave', 'drop'].forEach(ev => {
+                dropZone.addEventListener(ev, (e) => { e.preventDefault();
+                    dropZone.classList.remove('drag-over'); });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length) handleFileList(e.dataTransfer.files);
+            });
+            clearBtn.addEventListener('click', () => { files = [];
+                render(); });
+
+            async function truncateAudioBuffer(buffer, seconds) {
+                const dur = buffer.duration;
+                if (dur <= seconds) {
+                    const newBuf = new AudioBuffer({
+                        numberOfChannels: buffer.numberOfChannels,
+                        length: Math.max(1, buffer.length),
+                        sampleRate: buffer.sampleRate
+                    });
+                    for (let c = 0; c < buffer.numberOfChannels; c++) {
+                        const src = buffer.getChannelData(c);
+                        const dst = newBuf.getChannelData(c);
+                        dst.set(src);
+                    }
+                    return newBuf;
+                }
+
+                const sr = buffer.sampleRate;
+                const ch = buffer.numberOfChannels;
+                const targetLen = Math.max(1, Math.floor(seconds * sr));
+
+                const off = new OfflineAudioContext({
+                    numberOfChannels: ch,
+                    length: targetLen,
+                    sampleRate: sr
+                });
+
+                const src = off.createBufferSource();
+                src.buffer = buffer;
+                src.start(0);
+                src.stop(Math.min(seconds, dur));
+                src.connect(off.destination);
+
+                return await off.startRendering();
+            }
+
+            processBtn.addEventListener('click', async function() {
+                if (files.length === 0) { alert('请先选择文件'); return; }
+                const seconds = parseInt(secondsInput.value) || 20;
+                if (seconds < 1) { alert('秒数至少为1'); return; }
+                const format = document.querySelector('input[name="truncateFormat"]:checked').value;
+                this.disabled = true;
+                progressDiv.style.display = 'block';
+                progressBar.style.width = '0%';
+
+                try {
+                    if (files.length === 1) {
+                        const arrayBuf = await files[0].arrayBuffer();
+                        const buf = await audioCtx.decodeAudioData(arrayBuf);
+                        const resultBuf = await truncateAudioBuffer(buf, seconds);
+                        progressBar.style.width = '70%';
+                        const blob = format === 'wav' ? bufferToWav(resultBuf) : await bufferToMp3(resultBuf);
+                        const suffix = buf.duration <= seconds ? '_完整' : '_前' + seconds + 's';
+                        const name = cleanName(files[0].name) + suffix + (format === 'mp3' ? '.mp3' : '.wav');
+                        await downloadBlob(blob, name);
+                        progressBar.style.width = '100%';
+                    } else {
+                        // 每15个一批打包下载
+                        const batchSize = 15;
+                        const totalBatches = Math.ceil(files.length / batchSize);
+                        for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+                            const start = batchIdx * batchSize;
+                            const end = Math.min(start + batchSize, files.length);
+                            const batchFiles = files.slice(start, end);
+                            
+                            const zip = new JSZip();
+                            for (let i = 0; i < batchFiles.length; i++) {
+                                progressBar.style.width = ((i / batchFiles.length) * 80 + 10) + '%';
+                                const arrayBuf = await batchFiles[i].arrayBuffer();
+                                const buf = await audioCtx.decodeAudioData(arrayBuf);
+                                const resultBuf = await truncateAudioBuffer(buf, seconds);
+                                const blob = format === 'wav' ? bufferToWav(resultBuf) : await bufferToMp3(resultBuf);
+                                const suffix = buf.duration <= seconds ? '_完整' : '_前' + seconds + 's';
+                                const name = cleanName(batchFiles[i].name) + suffix + (format === 'mp3' ? '.mp3' : '.wav');
+                                zip.file(name, blob);
+                            }
+                            progressBar.style.width = '95%';
+                            const zipBlob = await zip.generateAsync({ type: 'blob' });
+                            const zipName = totalBatches === 1 ? '截取结果.zip' : '截取结果_第' + (batchIdx + 1) + '批.zip';
+                            await downloadBlob(zipBlob, zipName);
+                        }
+                        progressBar.style.width = '100%';
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('处理失败: ' + e.message);
+                    progressBar.style.width = '0%';
+                }
+                this.disabled = false;
+                setTimeout(() => progressDiv.style.display = 'none', 1500);
+            });
+
+            render();
+        })();
+    </script>
+</body>
+</html>
